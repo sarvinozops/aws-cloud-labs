@@ -25,7 +25,8 @@ flowchart LR
     EC2 --> WEB[Apache + PHP + MariaDB Café App]
 
     CF --> S3[S3 Static Website]
-Objectives
+ ```   
+### Objectives
 Create an Amazon S3 bucket by using CloudFormation.
 Configure the S3 bucket for static website hosting.
 Store CloudFormation templates in AWS CodeCommit.

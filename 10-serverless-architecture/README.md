@@ -34,48 +34,51 @@ No Amazon EC2 instances are required.
 ```mermaid
 flowchart LR
     store["Store Inventory CSV"] --> s3["Amazon S3"]
-    s3 -->|Object Created Event| load["Load-Inventory Lambda"]
-    load --> ddb["Amazon DynamoDB Inventory Table"]
+    s3 --> load["Load-Inventory Lambda"]
+    load --> ddb["Amazon DynamoDB Inventory"]
     ddb --> dashboard["Inventory Dashboard"]
-    ddb -->|DynamoDB Stream| check["Check-Stock Lambda"]
-    check -->|Count = 0| sns["Amazon SNS NoStock Topic"]
+    ddb --> check["Check-Stock Lambda"]
+    check --> sns["Amazon SNS NoStock"]
     sns --> email["Email Notification"]
-Workflow
-A store uploads an inventory CSV file to an S3 bucket.
-The S3 object-created event invokes the Load-Inventory Lambda function.
-The function downloads and reads the CSV file.
-Each inventory record is inserted into the DynamoDB Inventory table.
-DynamoDB Streams invokes the Check-Stock Lambda function.
-The function checks the inventory count for each new record.
-If an item count is zero, a message is published to the NoStock SNS topic.
-Amazon SNS sends an Inventory Alert! email.
-The inventory dashboard retrieves and displays data from DynamoDB.
-Lambda Functions
-Load-Inventory
+```
 
-File:
+## Workflow
 
-lambda/load_inventory.py
+1. A store uploads an inventory CSV file to Amazon S3.
+2. The S3 object-created event invokes the `Load-Inventory` Lambda function.
+3. The function reads the CSV file and inserts the records into DynamoDB.
+4. DynamoDB Streams invokes the `Check-Stock` Lambda function.
+5. The function checks whether an inventory count equals zero.
+6. If an item is out of stock, the function publishes a message to Amazon SNS.
+7. Amazon SNS sends an inventory alert by email.
+8. The dashboard retrieves and displays inventory data from DynamoDB.
 
-Responsibilities:
+## Lambda Functions
 
-Receives an Amazon S3 object-created event
-Downloads the uploaded CSV file
-Reads the inventory records
-Inserts Store, Item, and Count into DynamoDB
-Check-Stock
+### Load-Inventory
 
-File:
-
-lambda/check_stock.py
+File: `lambda/load_inventory.py`
 
 Responsibilities:
 
-Receives records from DynamoDB Streams
-Checks newly inserted inventory values
-Detects records where Count equals zero
-Publishes an alert to the NoStock SNS topic
-Example Inventory File
+- Receives an Amazon S3 object-created event
+- Downloads and reads the uploaded CSV file
+- Inserts `Store`, `Item`, and `Count` values into DynamoDB
+
+### Check-Stock
+
+File: `lambda/check_stock.py`
+
+Responsibilities:
+
+- Receives records from DynamoDB Streams
+- Checks newly inserted inventory values
+- Detects records where `Count` equals zero
+- Publishes alerts to the `NoStock` SNS topic
+
+## Example Inventory File
+
+```csv
 store,item,count
 Berlin,Echo Dot,12
 Berlin,Echo (2nd Gen),19
@@ -83,69 +86,51 @@ Berlin,Echo Show,18
 Berlin,Echo Plus,0
 Berlin,Echo Look,10
 Berlin,Amazon Tap,15
-Implementation Summary
-1. Load-Inventory Lambda
+```
 
-A Python Lambda function was created with the existing Lambda-Load-Inventory-Role.
+## Implementation Summary
 
-Python 3.12 was used because Python 3.8 was no longer available when the lab was completed.
+- Created the `Load-Inventory` Lambda function with Python 3.12.
+- Configured an S3 object-created event notification.
+- Loaded CSV inventory data into the DynamoDB `Inventory` table.
+- Created the `NoStock` SNS topic and confirmed an email subscription.
+- Created the `Check-Stock` Lambda function.
+- Connected DynamoDB Streams to the `Check-Stock` function.
+- Verified inventory alerts through email notifications.
 
-2. S3 Event Notification
+## Project Structure
 
-An inventory S3 bucket was created and configured with an event notification:
-
-Event: All object create events
-Destination: Load-Inventory Lambda
-3. DynamoDB Data Loading
-
-Inventory CSV files were uploaded to S3. The Lambda function processed the files and inserted their records into the Inventory DynamoDB table.
-
-4. SNS Email Subscription
-
-A standard SNS topic named NoStock was created. An email endpoint was subscribed and confirmed.
-
-5. Check-Stock Lambda
-
-A second Python Lambda function was created with the existing Lambda-Check-Stock-Role.
-
-The function was connected to the Inventory table through DynamoDB Streams.
-
-6. Final Test
-
-Multiple inventory files were uploaded for Berlin, Calcutta, and Karachi.
-
-The dashboard displayed inventory records from all stores. When an item had zero inventory, an email was successfully received.
-
-Example notification:
-
-Subject: Inventory Alert!
-
-Karachi is out of stock of Echo Plus
-Project Structure
+```text
 10-serverless-architecture/
 ├── README.md
 ├── lambda/
 │   ├── check_stock.py
 │   └── load_inventory.py
 └── screenshots/
-Security Notes
-AWS account IDs and resource ARNs are hidden from public screenshots.
-Email addresses and Cognito identity information are not exposed.
-Lambda functions use predefined IAM execution roles.
-No credentials or secrets are stored in this repository.
-Result
+```
 
-The serverless architecture was successfully implemented and tested.
+## Security Notes
 
+- AWS account IDs and resource ARNs are hidden from public screenshots.
+- Email addresses and Cognito identity information are not exposed.
+- Lambda functions use predefined IAM execution roles.
+- No credentials or secrets are stored in this repository.
+
+## Result
+
+```text
 Final score: 40/40
-Key Learning Outcomes
-Event-driven AWS architecture
-Serverless application design
-S3 event notifications
-Lambda integration with AWS services
-DynamoDB Streams
-SNS email notifications
-IAM execution roles
+```
+
+## Key Learning Outcomes
+
+- Event-driven AWS architecture
+- Serverless application design
+- S3 event notifications
+- Lambda integrations
+- DynamoDB Streams
+- SNS email notifications
+- IAM execution roles
 
 ## Screenshots
 
